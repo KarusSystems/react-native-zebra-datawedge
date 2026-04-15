@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="zdw_profile_name">AppDataWedgeProfile</string>
+    <string name="zdw_scan_action"></string>
+    <bool name="zdw_keystroke_output_enabled">false</bool>
+    <string-array name="zdw_enabled_decoders">
+        <item>code128</item>
+    </string-array>
+</resources>

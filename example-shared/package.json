@@ -1,0 +1,11 @@
+{
+  "name": "@zdw/example-shared",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.tsx",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-zebra-datawedge": "*"
+  }
+}

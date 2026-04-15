@@ -16,11 +16,9 @@
     "src",
     "lib",
     "android",
-    "ios",
-    "cpp",
-    "*.podspec",
+    "plugin/build",
+    "app.plugin.js",
     "react-native.config.js",
-    "!ios/build",
     "!android/build",
     "!android/gradle",
     "!android/gradlew",
@@ -33,17 +31,22 @@
   ],
   "scripts": {
     "example": "yarn workspace react-native-zebra-datawedge-example",
-    "clean": "del-cli lib",
-    "prepare": "bob build",
-    "typecheck": "tsc",
+    "clean": "del-cli lib plugin/build",
+    "build:plugin": "tsc -p plugin",
+    "prepare": "bob build && yarn build:plugin",
+    "typecheck": "tsc && tsc -p plugin --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
     "release": "release-it --only-version"
   },
   "keywords": [
     "react-native",
-    "ios",
-    "android"
+    "expo",
+    "android",
+    "zebra",
+    "datawedge",
+    "barcode",
+    "scanner"
   ],
   "repository": {
     "type": "git",
@@ -63,11 +66,13 @@
     "@eslint/compat": "^2.0.3",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
+    "@expo/config-plugins": "^10.0.0",
     "@jest/globals": "^30.0.0",
     "@react-native/babel-preset": "0.85.0",
     "@react-native/eslint-config": "0.85.0",
     "@react-native/jest-preset": "0.85.0",
     "@release-it/conventional-changelog": "^10.0.6",
+    "@types/node": "^22.7.0",
     "@types/react": "^19.2.0",
     "commitlint": "^20.5.0",
     "del-cli": "^7.0.0",
@@ -89,8 +94,15 @@
     "react": "*",
     "react-native": "*"
   },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
+  },
   "workspaces": [
-    "example"
+    "example",
+    "example-bare",
+    "example-shared"
   ],
   "packageManager": "yarn@4.11.0",
   "react-native-builder-bob": {
@@ -111,14 +123,6 @@
       ]
     ]
   },
-  "codegenConfig": {
-    "name": "ZebraDatawedgeSpec",
-    "type": "modules",
-    "jsSrcsDir": "src",
-    "android": {
-      "javaPackageName": "com.zebradatawedge"
-    }
-  },
   "prettier": {
     "quoteProps": "consistent",
     "singleQuote": true,
@@ -130,6 +134,8 @@
     "preset": "@react-native/jest-preset",
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
+      "<rootDir>/example-bare/node_modules",
+      "<rootDir>/example-shared/node_modules",
       "<rootDir>/lib/"
     ]
   },
@@ -156,16 +162,5 @@
         }
       }
     }
-  },
-  "create-react-native-library": {
-    "type": "turbo-module",
-    "languages": "kotlin-objc",
-    "tools": [
-      "eslint",
-      "jest",
-      "lefthook",
-      "release-it"
-    ],
-    "version": "0.62.0"
   }
 }

@@ -1,20 +1,5 @@
-import { Text, View, StyleSheet } from 'react-native';
-import { multiply } from 'react-native-zebra-datawedge';
-
-const result = multiply(3, 7);
+import Shared from '@zdw/example-shared';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Result: {result}</Text>
-    </View>
-  );
+  return <Shared runtimeMode="expo" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

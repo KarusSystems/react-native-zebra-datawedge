@@ -11,10 +11,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "zebradatawedge.example"
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -24,8 +20,16 @@
       },
       "package": "zebradatawedge.example"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "react-native-zebra-datawedge",
+        {
+          "profileName": "ZdwExampleProfile",
+          "scanAction": "zebradatawedge.example.SCAN",
+          "decoders": ["code128", "code39", "qrcode", "ean13"],
+          "keystrokeOutput": false
+        }
+      ]
+    ]
   }
 }

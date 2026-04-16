@@ -127,6 +127,13 @@ The hook calls `configureProfile()` + `getDiagnostics()` on mount, subscribes
 to barcode events, and exposes helpers to start/stop the scanner and
 re-apply the profile.
 
+> **Multi-screen apps:** call `useZebraScanner` **once** at the top of your
+> tree and share it via React context. Calling the hook independently in
+> each screen would create independent subscriptions and independent
+> start/stop flags. See [example-shared/src/App.tsx](example-shared/src/App.tsx)
+> and [example-shared/src/context.ts](example-shared/src/context.ts) for
+> the pattern used by the demo app.
+
 ### Imperative API
 
 ```tsx

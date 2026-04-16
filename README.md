@@ -1,4 +1,4 @@
-# react-native-zebra-datawedge
+# @karus-systems/react-native-zebra-datawedge
 
 Open-source wrapper for Zebra [DataWedge](https://techdocs.zebra.com/datawedge/)
 with first-class Expo + bare RN support. Ships profile auto-setup, barcode
@@ -29,9 +29,9 @@ wire up a Zebra hardware scanner without touching intents or Bundles.
 ## Install
 
 ```sh
-npm install react-native-zebra-datawedge
+npm install @karus-systems/react-native-zebra-datawedge
 # or
-yarn add react-native-zebra-datawedge
+yarn add @karus-systems/react-native-zebra-datawedge
 ```
 
 ### Expo (managed workflow)
@@ -42,7 +42,7 @@ Add the config plugin to `app.json` and rebuild:
 {
   "expo": {
     "plugins": [
-      ["react-native-zebra-datawedge", {
+      ["@karus-systems/react-native-zebra-datawedge", {
         "profileName": "MyAppProfile",
         "scanAction": "com.myapp.SCAN",
         "decoders": ["code128", "qrcode", "ean13"],
@@ -103,7 +103,7 @@ for a working reference.
 ### Hook (recommended)
 
 ```tsx
-import { useZebraScanner } from 'react-native-zebra-datawedge';
+import { useZebraScanner } from '@karus-systems/react-native-zebra-datawedge';
 
 function Scanner() {
   const {
@@ -145,7 +145,7 @@ import {
   triggerSoftScan,
   openDataWedgeApp,
   openDataWedgeAppDetails,
-} from 'react-native-zebra-datawedge';
+} from '@karus-systems/react-native-zebra-datawedge';
 
 await configureProfile();
 const diag = await getDiagnostics();

@@ -4,8 +4,8 @@
   "private": true,
   "main": "src/index.tsx",
   "peerDependencies": {
+    "@karus-systems/react-native-zebra-datawedge": "*",
     "react": "*",
-    "react-native": "*",
-    "react-native-zebra-datawedge": "*"
+    "react-native": "*"
   }
 }

@@ -22,7 +22,7 @@
     },
     "plugins": [
       [
-        "react-native-zebra-datawedge",
+        "@karus-systems/react-native-zebra-datawedge",
         {
           "profileName": "ZdwExampleProfile",
           "scanAction": "zebradatawedge.example.SCAN",

@@ -3555,6 +3555,46 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@karus-systems/react-native-zebra-datawedge@npm:*, @karus-systems/react-native-zebra-datawedge@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@karus-systems/react-native-zebra-datawedge@workspace:."
+  dependencies:
+    "@commitlint/config-conventional": "npm:^20.5.0"
+    "@eslint/compat": "npm:^2.0.3"
+    "@eslint/eslintrc": "npm:^3.3.5"
+    "@eslint/js": "npm:^10.0.1"
+    "@expo/config-plugins": "npm:^10.0.0"
+    "@jest/globals": "npm:^30.0.0"
+    "@react-native/babel-preset": "npm:0.85.0"
+    "@react-native/eslint-config": "npm:0.85.0"
+    "@react-native/jest-preset": "npm:0.85.0"
+    "@release-it/conventional-changelog": "npm:^10.0.6"
+    "@types/node": "npm:^22.7.0"
+    "@types/react": "npm:^19.2.0"
+    commitlint: "npm:^20.5.0"
+    del-cli: "npm:^7.0.0"
+    eslint: "npm:^9.39.4"
+    eslint-config-prettier: "npm:^10.1.8"
+    eslint-plugin-ft-flow: "npm:^3.0.11"
+    eslint-plugin-prettier: "npm:^5.5.5"
+    jest: "npm:^30.3.0"
+    lefthook: "npm:^2.1.4"
+    prettier: "npm:^3.8.1"
+    react: "npm:19.2.0"
+    react-native: "npm:0.83.4"
+    react-native-builder-bob: "npm:^0.41.0"
+    release-it: "npm:^19.2.4"
+    turbo: "npm:^2.8.21"
+    typescript: "npm:^6.0.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  peerDependenciesMeta:
+    expo:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "@napi-rs/wasm-runtime@npm:^0.2.11":
   version: 0.2.12
   resolution: "@napi-rs/wasm-runtime@npm:0.2.12"
@@ -5139,9 +5179,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@zdw/example-shared@workspace:example-shared"
   peerDependencies:
+    "@karus-systems/react-native-zebra-datawedge": "*"
     react: "*"
     react-native: "*"
-    react-native-zebra-datawedge: "*"
   languageName: unknown
   linkType: soft
 
@@ -5152,6 +5192,7 @@ __metadata:
     "@babel/core": "npm:^7.20.0"
     "@babel/preset-env": "npm:^7.20.0"
     "@babel/runtime": "npm:^7.20.0"
+    "@karus-systems/react-native-zebra-datawedge": "npm:*"
     "@react-native-community/eslint-config": "npm:^3.2.0"
     "@tsconfig/react-native": "npm:^2.0.2"
     "@types/jest": "npm:^29.2.1"
@@ -5165,7 +5206,6 @@ __metadata:
     prettier: "npm:^2.4.1"
     react: "npm:18.2.0"
     react-native: "npm:0.71.19"
-    react-native-zebra-datawedge: "npm:*"
     react-test-renderer: "npm:18.2.0"
     typescript: "npm:4.8.4"
   languageName: unknown
@@ -14306,6 +14346,7 @@ __metadata:
   resolution: "react-native-zebra-datawedge-example@workspace:example"
   dependencies:
     "@expo/metro-runtime": "npm:~55.0.9"
+    "@karus-systems/react-native-zebra-datawedge": "npm:*"
     "@zdw/example-shared": "npm:*"
     expo: "npm:~55.0.15"
     expo-dev-client: "npm:~55.0.27"
@@ -14316,47 +14357,6 @@ __metadata:
     react-native-builder-bob: "npm:^0.41.0"
     react-native-monorepo-config: "npm:^0.3.3"
     react-native-web: "npm:~0.21.0"
-    react-native-zebra-datawedge: "npm:*"
-  languageName: unknown
-  linkType: soft
-
-"react-native-zebra-datawedge@npm:*, react-native-zebra-datawedge@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "react-native-zebra-datawedge@workspace:."
-  dependencies:
-    "@commitlint/config-conventional": "npm:^20.5.0"
-    "@eslint/compat": "npm:^2.0.3"
-    "@eslint/eslintrc": "npm:^3.3.5"
-    "@eslint/js": "npm:^10.0.1"
-    "@expo/config-plugins": "npm:^10.0.0"
-    "@jest/globals": "npm:^30.0.0"
-    "@react-native/babel-preset": "npm:0.85.0"
-    "@react-native/eslint-config": "npm:0.85.0"
-    "@react-native/jest-preset": "npm:0.85.0"
-    "@release-it/conventional-changelog": "npm:^10.0.6"
-    "@types/node": "npm:^22.7.0"
-    "@types/react": "npm:^19.2.0"
-    commitlint: "npm:^20.5.0"
-    del-cli: "npm:^7.0.0"
-    eslint: "npm:^9.39.4"
-    eslint-config-prettier: "npm:^10.1.8"
-    eslint-plugin-ft-flow: "npm:^3.0.11"
-    eslint-plugin-prettier: "npm:^5.5.5"
-    jest: "npm:^30.3.0"
-    lefthook: "npm:^2.1.4"
-    prettier: "npm:^3.8.1"
-    react: "npm:19.2.0"
-    react-native: "npm:0.83.4"
-    react-native-builder-bob: "npm:^0.41.0"
-    release-it: "npm:^19.2.4"
-    turbo: "npm:^2.8.21"
-    typescript: "npm:^6.0.2"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  peerDependenciesMeta:
-    expo:
-      optional: true
   languageName: unknown
   linkType: soft
 

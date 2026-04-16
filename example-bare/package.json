@@ -10,10 +10,10 @@
     "test": "jest"
   },
   "dependencies": {
+    "@karus-systems/react-native-zebra-datawedge": "*",
     "@zdw/example-shared": "*",
     "react": "18.2.0",
-    "react-native": "0.71.19",
-    "react-native-zebra-datawedge": "*"
+    "react-native": "0.71.19"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

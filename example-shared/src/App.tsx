@@ -10,7 +10,7 @@ import {
 import {
   useZebraScanner,
   type BarcodeEvent,
-} from 'react-native-zebra-datawedge';
+} from '@karus-systems/react-native-zebra-datawedge';
 import { ScanScreen } from './screens/ScanScreen';
 import { DiagnosticsScreen } from './screens/DiagnosticsScreen';
 import { AboutScreen } from './screens/AboutScreen';

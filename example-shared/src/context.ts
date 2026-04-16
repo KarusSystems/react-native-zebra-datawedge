@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import type {
   BarcodeEvent,
   UseZebraScannerResult,
-} from 'react-native-zebra-datawedge';
+} from '@karus-systems/react-native-zebra-datawedge';
 import type { RuntimeMode } from './App';
 
 export type ScannerContextValue = {

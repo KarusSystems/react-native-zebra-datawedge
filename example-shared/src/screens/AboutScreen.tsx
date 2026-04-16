@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { triggerSoftScan } from 'react-native-zebra-datawedge';
+import { triggerSoftScan } from '@karus-systems/react-native-zebra-datawedge';
 import { useScannerContext } from '../context';
 
 export function AboutScreen() {

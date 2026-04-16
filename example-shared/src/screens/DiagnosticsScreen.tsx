@@ -9,7 +9,7 @@ import {
   openDataWedgeApp,
   openDataWedgeAppDetails,
   type Diagnostics,
-} from 'react-native-zebra-datawedge';
+} from '@karus-systems/react-native-zebra-datawedge';
 import { useScannerContext } from '../context';
 
 type Row = {

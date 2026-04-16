@@ -13,14 +13,14 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~55.0.9",
+    "@karus-systems/react-native-zebra-datawedge": "*",
     "@zdw/example-shared": "*",
     "expo": "~55.0.15",
     "expo-status-bar": "~55.0.5",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.4",
-    "react-native-web": "~0.21.0",
-    "react-native-zebra-datawedge": "*"
+    "react-native-web": "~0.21.0"
   },
   "private": true,
   "devDependencies": {

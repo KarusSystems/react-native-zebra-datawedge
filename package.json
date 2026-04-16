@@ -1,5 +1,5 @@
 {
-  "name": "react-native-zebra-datawedge",
+  "name": "@karus-systems/react-native-zebra-datawedge",
   "version": "0.1.0",
   "description": "React Native + Expo plugin for Zebra DataWedge: auto profile setup, barcode events, and built-in diagnostics.",
   "main": "./lib/module/index.js",
@@ -59,6 +59,7 @@
   },
   "homepage": "https://github.com/KarusSystems/react-native-zebra-datawedge#readme",
   "publishConfig": {
+    "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {

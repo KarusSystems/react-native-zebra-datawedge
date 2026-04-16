@@ -10,7 +10,7 @@ const workspaceRoot = path.resolve(projectRoot, '..');
 const PINNED_PACKAGES = [
   'react',
   'react-native',
-  'react-native-zebra-datawedge',
+  '@karus-systems/react-native-zebra-datawedge',
 ];
 
 function isPinned(moduleName) {

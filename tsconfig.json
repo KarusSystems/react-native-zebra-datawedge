@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-zebra-datawedge": ["./src/index"]
+      "@karus-systems/react-native-zebra-datawedge": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

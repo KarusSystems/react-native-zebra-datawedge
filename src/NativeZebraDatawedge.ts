@@ -7,7 +7,7 @@ import {
 import type { BarcodeEvent, Diagnostics } from './types';
 
 const LINKING_ERROR =
-  "The package 'react-native-zebra-datawedge' doesn't seem to be linked. Make sure:\n\n" +
+  "The package '@karus-systems/react-native-zebra-datawedge' doesn't seem to be linked. Make sure:\n\n" +
   '- You rebuilt the app after installing the package\n' +
   '- You are running on Android (this library is Android-only)\n';
 

@@ -204,10 +204,16 @@ class ZebraDataWedgeModule(
   @ReactMethod
   fun triggerSoftScan(start: Boolean, promise: Promise) {
     try {
-      sendDataWedgeBroadcast(
-        "com.symbol.datawedge.api.ACTION_SOFTSCANTRIGGER",
-        extraString = if (start) "START_SCANNING" else "STOP_SCANNING"
-      )
+      // SOFTSCANTRIGGER uses its own action + a dedicated EXTRA_PARAMETER
+      // key — not the generic "com.symbol.datawedge.api.ACTION" wrapper.
+      val intent = Intent("com.symbol.datawedge.api.ACTION_SOFTSCANTRIGGER").apply {
+        setPackage(DW_PACKAGE)
+        putExtra(
+          "com.symbol.datawedge.api.EXTRA_PARAMETER",
+          if (start) "START_SCANNING" else "STOP_SCANNING"
+        )
+      }
+      reactContext.sendBroadcast(intent)
       promise.resolve(true)
     } catch (t: Throwable) {
       promise.reject("DW_SOFT_SCAN_FAILED", t.message, t)

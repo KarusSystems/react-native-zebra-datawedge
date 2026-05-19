@@ -97,20 +97,14 @@ export function useZebraScanner(
     enabledRef.current = true;
     intendedEnabledRef.current = true;
     setIsScannerReady(false);
-    console.log('[zdw] startReading → setScannerEnabled(true)');
-    setScannerEnabled(true)
-      .then((r) => console.log('[zdw] setScannerEnabled(true) →', r))
-      .catch((e) => console.log('[zdw] setScannerEnabled(true) err', e));
+    setScannerEnabled(true).catch(() => {});
   }, []);
 
   const stopReading = useCallback(() => {
     enabledRef.current = false;
     intendedEnabledRef.current = false;
     setIsScannerReady(false);
-    console.log('[zdw] stopReading → setScannerEnabled(false)');
-    setScannerEnabled(false)
-      .then((r) => console.log('[zdw] setScannerEnabled(false) →', r))
-      .catch((e) => console.log('[zdw] setScannerEnabled(false) err', e));
+    setScannerEnabled(false).catch(() => {});
   }, []);
 
   return {

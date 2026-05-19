@@ -44,12 +44,10 @@ class ZebraDataWedgeModule(
   private val receiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
       intent ?: return
-      android.util.Log.d("ZebraDataWedge", "onReceive action=${intent.action} extras=${intent.extras?.keySet()?.joinToString()}")
       when (intent.action) {
         scanAction -> handleScan(intent)
         ACTION_RESULT -> handleResult(intent)
         ACTION_NOTIFICATION -> handleNotification(intent)
-        else -> android.util.Log.d("ZebraDataWedge", "unhandled action: ${intent.action}")
       }
     }
   }
@@ -207,7 +205,6 @@ class ZebraDataWedgeModule(
   @ReactMethod
   fun setScannerEnabled(enabled: Boolean, promise: Promise) {
     try {
-      android.util.Log.d("ZebraDataWedge", "setScannerEnabled($enabled)")
       sendDataWedgeBroadcast(
         "com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN",
         extraString = if (enabled) "ENABLE_PLUGIN" else "DISABLE_PLUGIN"
@@ -256,7 +253,6 @@ class ZebraDataWedgeModule(
       ?: return
     val labelType = intent.getStringExtra("com.symbol.datawedge.label_type")
       ?: intent.getStringExtra("decoded_label_type")
-    android.util.Log.d("ZebraDataWedge", "scan received: $data ($labelType)")
     val event = Arguments.createMap().apply {
       putString("data", data)
       if (labelType == null) putNull("labelType") else putString("labelType", labelType)
@@ -265,18 +261,9 @@ class ZebraDataWedgeModule(
   }
 
   private fun handleNotification(intent: Intent) {
-    android.util.Log.d("ZebraDataWedge", "handleNotification extras=${intent.extras?.keySet()?.joinToString()}")
-    val notification = intent.getBundleExtra("com.symbol.datawedge.api.NOTIFICATION") ?: run {
-      android.util.Log.d("ZebraDataWedge", "handleNotification: no NOTIFICATION bundle")
-      return
-    }
-    android.util.Log.d("ZebraDataWedge", "NOTIFICATION bundle keys=${notification.keySet().joinToString()}")
-    for (key in notification.keySet()) {
-      android.util.Log.d("ZebraDataWedge", "  notification[$key]=${notification.get(key)}")
-    }
+    val notification = intent.getBundleExtra("com.symbol.datawedge.api.NOTIFICATION") ?: return
     if (notification.getString("NOTIFICATION_TYPE") != "SCANNER_STATUS") return
     val status = notification.getString("STATUS") ?: return
-    android.util.Log.d("ZebraDataWedge", "SCANNER_STATUS notification: $status")
     // WAITING = scanner enabled and ready; SCANNING = actively scanning.
     // DISABLED / DISCONNECTED / CONNECTED = not ready to scan.
     val ready = status == "WAITING" || status == "SCANNING" || status == "IDLE"

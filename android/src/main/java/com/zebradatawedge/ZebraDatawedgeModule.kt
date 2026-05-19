@@ -47,6 +47,7 @@ class ZebraDataWedgeModule(
       when (intent.action) {
         scanAction -> handleScan(intent)
         ACTION_RESULT -> handleResult(intent)
+        ACTION_NOTIFICATION -> handleNotification(intent)
       }
     }
   }
@@ -54,12 +55,14 @@ class ZebraDataWedgeModule(
   init {
     reactContext.addLifecycleEventListener(this)
     registerReceiver()
+    registerForScannerStatusNotifications()
   }
 
   private fun registerReceiver() {
     val filter = IntentFilter().apply {
       addAction(scanAction)
       addAction(ACTION_RESULT)
+      addAction(ACTION_NOTIFICATION)
       addCategory(Intent.CATEGORY_DEFAULT)
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -68,6 +71,18 @@ class ZebraDataWedgeModule(
       @Suppress("UnspecifiedRegisterReceiverFlag")
       reactContext.registerReceiver(receiver, filter)
     }
+  }
+
+  private fun registerForScannerStatusNotifications() {
+    val bundle = android.os.Bundle().apply {
+      putString("APPLICATION_NAME", reactContext.packageName)
+      putString("NOTIFICATION_TYPE", "SCANNER_STATUS")
+    }
+    val intent = Intent(ACTION_DATAWEDGE_FROM_API).apply {
+      setPackage(DW_PACKAGE)
+      putExtra("com.symbol.datawedge.api.REGISTER_FOR_NOTIFICATION", bundle)
+    }
+    reactContext.sendBroadcast(intent)
   }
 
   override fun onHostResume() {
@@ -247,19 +262,20 @@ class ZebraDataWedgeModule(
     emitEvent("onBarcode", event)
   }
 
+  private fun handleNotification(intent: Intent) {
+    val notification = intent.getBundleExtra("com.symbol.datawedge.api.NOTIFICATION") ?: return
+    if (notification.getString("NOTIFICATION_TYPE") != "SCANNER_STATUS") return
+    val status = notification.getString("STATUS") ?: return
+    android.util.Log.d("ZebraDataWedge", "SCANNER_STATUS notification: $status")
+    // WAITING = scanner enabled and ready; SCANNING = actively scanning.
+    // DISABLED / DISCONNECTED / CONNECTED = not ready to scan.
+    val ready = status == "WAITING" || status == "SCANNING" || status == "IDLE"
+    val event = Arguments.createMap().apply { putString("result", if (ready) "SUCCESS" else "FAILURE") }
+    emitEvent("onScannerPluginResult", event)
+  }
+
   private fun handleResult(intent: Intent) {
     val extras = intent.extras ?: return
-
-    // Scanner enable/disable result — emit independently of any diagnostics query.
-    val command = extras.getString("com.symbol.datawedge.api.COMMAND")
-    val apiResult = extras.getString("com.symbol.datawedge.api.RESULT")
-    if (command == "com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN" && apiResult != null) {
-      val event = Arguments.createMap().apply { putString("result", apiResult) }
-      emitEvent("onScannerPluginResult", event)
-      return
-    }
-
-    // getDiagnostics results.
     val result = pendingResult ?: return
     if (extras.containsKey("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")) {
       val status = extras.getString("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")
@@ -344,6 +360,7 @@ class ZebraDataWedgeModule(
     const val NAME = "ZebraDataWedge"
     private const val DW_PACKAGE = "com.symbol.datawedge"
     private const val ACTION_RESULT = "com.symbol.datawedge.api.RESULT_ACTION"
+    private const val ACTION_NOTIFICATION = "com.symbol.datawedge.api.NOTIFICATION_ACTION"
     private const val ACTION_DATAWEDGE_FROM_API = "com.symbol.datawedge.api.ACTION"
   }
 }

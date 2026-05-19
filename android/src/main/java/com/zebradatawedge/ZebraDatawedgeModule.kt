@@ -44,10 +44,12 @@ class ZebraDataWedgeModule(
   private val receiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
       intent ?: return
+      android.util.Log.d("ZebraDataWedge", "onReceive action=${intent.action} extras=${intent.extras?.keySet()?.joinToString()}")
       when (intent.action) {
         scanAction -> handleScan(intent)
         ACTION_RESULT -> handleResult(intent)
         ACTION_NOTIFICATION -> handleNotification(intent)
+        else -> android.util.Log.d("ZebraDataWedge", "unhandled action: ${intent.action}")
       }
     }
   }
@@ -263,7 +265,15 @@ class ZebraDataWedgeModule(
   }
 
   private fun handleNotification(intent: Intent) {
-    val notification = intent.getBundleExtra("com.symbol.datawedge.api.NOTIFICATION") ?: return
+    android.util.Log.d("ZebraDataWedge", "handleNotification extras=${intent.extras?.keySet()?.joinToString()}")
+    val notification = intent.getBundleExtra("com.symbol.datawedge.api.NOTIFICATION") ?: run {
+      android.util.Log.d("ZebraDataWedge", "handleNotification: no NOTIFICATION bundle")
+      return
+    }
+    android.util.Log.d("ZebraDataWedge", "NOTIFICATION bundle keys=${notification.keySet().joinToString()}")
+    for (key in notification.keySet()) {
+      android.util.Log.d("ZebraDataWedge", "  notification[$key]=${notification.get(key)}")
+    }
     if (notification.getString("NOTIFICATION_TYPE") != "SCANNER_STATUS") return
     val status = notification.getString("STATUS") ?: return
     android.util.Log.d("ZebraDataWedge", "SCANNER_STATUS notification: $status")

@@ -17,14 +17,20 @@ export function ScanScreen() {
         <View
           style={[
             styles.statusDot,
-            scanner.hasHardwareScanner ? styles.dotOk : styles.dotBad,
+            scanner.hasHardwareScanner && scanner.isScannerReady
+              ? styles.dotOk
+              : scanner.hasHardwareScanner
+                ? styles.dotPending
+                : styles.dotBad,
           ]}
         />
         <Text style={styles.statusText}>
           {scanner.isChecking
             ? 'Checking scanner…'
             : scanner.hasHardwareScanner
-              ? 'Scanner ready'
+              ? scanner.isScannerReady
+                ? 'Scanner ready'
+                : 'Enabling scanner…'
               : 'Scanner unavailable — see Diagnostics tab'}
         </Text>
       </View>
@@ -109,6 +115,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   dotOk: { backgroundColor: '#10B981' },
+  dotPending: { backgroundColor: '#F59E0B' },
   dotBad: { backgroundColor: '#EF4444' },
   statusText: { fontSize: 14, color: '#374151' },
   card: {

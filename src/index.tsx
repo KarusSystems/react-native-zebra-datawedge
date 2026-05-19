@@ -1,5 +1,6 @@
 export {
   addBarcodeListener,
+  addScannerPluginResultListener,
   configureProfile,
   getDiagnostics,
   openDataWedgeApp,

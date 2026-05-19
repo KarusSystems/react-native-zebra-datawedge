@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   addBarcodeListener,
+  addScannerPluginResultListener,
   configureProfile,
   getDiagnostics,
   setScannerEnabled,
@@ -15,6 +16,7 @@ export type UseZebraScannerOptions = {
 export type UseZebraScannerResult = {
   hasHardwareScanner: boolean;
   isChecking: boolean;
+  isScannerReady: boolean;
   diagnostics: Diagnostics | null;
   startReading: () => void;
   stopReading: () => void;
@@ -30,8 +32,11 @@ export function useZebraScanner(
   callbackRef.current = onBarcode;
 
   const enabledRef = useRef(true);
+  // Tracks whether the last setScannerEnabled call was an enable (true) or disable.
+  const intendedEnabledRef = useRef(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [isScannerReady, setIsScannerReady] = useState(false);
 
   const runDiagnostics = useCallback(async () => {
     try {
@@ -78,15 +83,30 @@ export function useZebraScanner(
     return () => sub.remove();
   }, []);
 
+  // Listen for DataWedge's confirmation that ENABLE_PLUGIN / DISABLE_PLUGIN completed.
+  useEffect(() => {
+    const sub = addScannerPluginResultListener((event) => {
+      if (event.result === 'SUCCESS') {
+        setIsScannerReady(intendedEnabledRef.current);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   const startReading = useCallback(() => {
     enabledRef.current = true;
+    intendedEnabledRef.current = true;
+    setIsScannerReady(false);
     console.log('[zdw] startReading → setScannerEnabled(true)');
     setScannerEnabled(true)
       .then((r) => console.log('[zdw] setScannerEnabled(true) →', r))
       .catch((e) => console.log('[zdw] setScannerEnabled(true) err', e));
   }, []);
+
   const stopReading = useCallback(() => {
     enabledRef.current = false;
+    intendedEnabledRef.current = false;
+    setIsScannerReady(false);
     console.log('[zdw] stopReading → setScannerEnabled(false)');
     setScannerEnabled(false)
       .then((r) => console.log('[zdw] setScannerEnabled(false) →', r))
@@ -97,6 +117,7 @@ export function useZebraScanner(
     hasHardwareScanner:
       !!diagnostics && diagnostics.installed && diagnostics.enabled,
     isChecking,
+    isScannerReady,
     diagnostics,
     startReading,
     stopReading,

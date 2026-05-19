@@ -226,6 +226,12 @@ class ZebraDataWedgeModule(
 
   // ---- helpers ----
 
+  private fun emitEvent(name: String, payload: WritableMap) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(name, payload)
+  }
+
   private fun handleScan(intent: Intent) {
     // DataWedge uses one of two extra keys depending on firmware version.
     val data = intent.getStringExtra("com.symbol.datawedge.data_string")
@@ -238,14 +244,23 @@ class ZebraDataWedgeModule(
       putString("data", data)
       if (labelType == null) putNull("labelType") else putString("labelType", labelType)
     }
-    reactContext
-      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-      .emit("onBarcode", event)
+    emitEvent("onBarcode", event)
   }
 
   private fun handleResult(intent: Intent) {
-    val result = pendingResult ?: return
     val extras = intent.extras ?: return
+
+    // Scanner enable/disable result — emit independently of any diagnostics query.
+    val command = extras.getString("com.symbol.datawedge.api.COMMAND")
+    val apiResult = extras.getString("com.symbol.datawedge.api.RESULT")
+    if (command == "com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN" && apiResult != null) {
+      val event = Arguments.createMap().apply { putString("result", apiResult) }
+      emitEvent("onScannerPluginResult", event)
+      return
+    }
+
+    // getDiagnostics results.
+    val result = pendingResult ?: return
     if (extras.containsKey("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")) {
       val status = extras.getString("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")
       result.putBoolean("serviceEnabled", status.equals("enabled", ignoreCase = true))

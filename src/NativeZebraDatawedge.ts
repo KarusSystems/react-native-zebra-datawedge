@@ -69,3 +69,15 @@ export function addBarcodeListener(
   }
   return emitter.addListener('onBarcode', listener as (event: unknown) => void);
 }
+
+export function addScannerPluginResultListener(
+  listener: (event: { result: 'SUCCESS' | 'FAILURE' }) => void
+): EmitterSubscription {
+  if (!emitter) {
+    return { remove: () => {} } as EmitterSubscription;
+  }
+  return emitter.addListener(
+    'onScannerPluginResult',
+    listener as (event: unknown) => void
+  );
+}

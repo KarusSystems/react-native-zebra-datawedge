@@ -166,6 +166,7 @@ type Diagnostics = {
   installed: boolean;        // com.symbol.datawedge is on the device
   packageEnabled: boolean;   // DataWedge not disabled in Android settings
   serviceEnabled: boolean;   // DataWedge's own in-app "DataWedge enabled" toggle
+  serviceStatusKnown: boolean; // false if DataWedge never answered the query
   enabled: boolean;          // packageEnabled && serviceEnabled
   version: string | null;    // DataWedge versionName, if available
   profileName: string;       // your configured profile name
@@ -174,6 +175,16 @@ type Diagnostics = {
   profileConfigured: boolean; // configureProfile() succeeded this session
 };
 ```
+
+`serviceEnabled` is read over a broadcast round-trip that can time out, most
+often on the first query of a session while the DataWedge service is still
+cold-starting. When that happens `serviceStatusKnown` is `false` and
+`serviceEnabled` is meaningless — a timeout means "no answer", not "disabled".
+
+`useZebraScanner` handles this for you: it keeps the last known-good answer,
+falls back to the (synchronously verifiable) package state when there isn't one,
+and re-queries in the background. If you call `getDiagnostics()` directly, check
+`serviceStatusKnown` before telling a user their scanner is unavailable.
 
 `getDiagnostics()` fires two DataWedge query broadcasts in parallel with a
 2-second timeout — missing fields degrade to `false` rather than rejecting,

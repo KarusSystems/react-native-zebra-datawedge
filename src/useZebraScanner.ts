@@ -6,7 +6,19 @@ import {
   getDiagnostics,
   setScannerEnabled,
 } from './NativeZebraDataWedge';
+import {
+  reconcileDiagnostics,
+  resolveScannerPluginResult,
+} from './scannerState';
 import type { BarcodeEvent, Diagnostics } from './types';
+
+/**
+ * How long to wait for DataWedge to confirm an enable before assuming it
+ * worked. The native module now resolves readiness from SCANNER_INPUT_PLUGIN's
+ * own RESULT_ACTION, which always arrives — this is a last-resort guard so a
+ * lost broadcast can never strand the UI on a spinner forever.
+ */
+const READY_TIMEOUT_MS = 3000;
 
 export type UseZebraScannerOptions = {
   onBarcode?: (event: BarcodeEvent) => void;
@@ -34,13 +46,26 @@ export function useZebraScanner(
   const enabledRef = useRef(true);
   // Tracks whether the last setScannerEnabled call was an enable (true) or disable.
   const intendedEnabledRef = useRef(false);
+  const diagnosticsRef = useRef<Diagnostics | null>(null);
+  const readyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [isScannerReady, setIsScannerReady] = useState(false);
 
+  const clearReadyTimeout = useCallback(() => {
+    if (readyTimeoutRef.current !== null) {
+      clearTimeout(readyTimeoutRef.current);
+      readyTimeoutRef.current = null;
+    }
+  }, []);
+
   const runDiagnostics = useCallback(async () => {
     try {
-      const d = await getDiagnostics();
+      const d = reconcileDiagnostics(
+        diagnosticsRef.current,
+        await getDiagnostics()
+      );
+      diagnosticsRef.current = d;
       setDiagnostics(d);
       return d;
     } catch {
@@ -67,8 +92,15 @@ export function useZebraScanner(
         } catch {}
       }
       if (cancelled) return;
-      await runDiagnostics();
+      const first = await runDiagnostics();
       if (!cancelled) setIsChecking(false);
+
+      // The first query races DataWedge's cold start, so an unanswered status
+      // is expected rather than exceptional. Ask again once it has settled.
+      if (!cancelled && first && !first.serviceStatusKnown) {
+        await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
+        if (!cancelled) await runDiagnostics();
+      }
     })();
     return () => {
       cancelled = true;
@@ -86,26 +118,40 @@ export function useZebraScanner(
   // Listen for DataWedge's confirmation that ENABLE_PLUGIN / DISABLE_PLUGIN completed.
   useEffect(() => {
     const sub = addScannerPluginResultListener((event) => {
-      if (event.result === 'SUCCESS') {
-        setIsScannerReady(intendedEnabledRef.current);
-      }
+      // Ignore a reply to a request we have since superseded.
+      if (event.requestedEnabled !== intendedEnabledRef.current) return;
+      clearReadyTimeout();
+      setIsScannerReady(
+        resolveScannerPluginResult(event.result, event.requestedEnabled)
+      );
     });
     return () => sub.remove();
-  }, []);
+  }, [clearReadyTimeout]);
+
+  useEffect(() => clearReadyTimeout, [clearReadyTimeout]);
 
   const startReading = useCallback(() => {
     enabledRef.current = true;
     intendedEnabledRef.current = true;
     setIsScannerReady(false);
+    clearReadyTimeout();
+    // Assume the enable landed if DataWedge never replies. A wrong optimistic
+    // "ready" costs the user one trigger press; a stuck spinner costs them the
+    // whole screen.
+    readyTimeoutRef.current = setTimeout(() => {
+      readyTimeoutRef.current = null;
+      if (intendedEnabledRef.current) setIsScannerReady(true);
+    }, READY_TIMEOUT_MS);
     setScannerEnabled(true).catch(() => {});
-  }, []);
+  }, [clearReadyTimeout]);
 
   const stopReading = useCallback(() => {
     enabledRef.current = false;
     intendedEnabledRef.current = false;
+    clearReadyTimeout();
     setIsScannerReady(false);
     setScannerEnabled(false).catch(() => {});
-  }, []);
+  }, [clearReadyTimeout]);
 
   return {
     hasHardwareScanner:

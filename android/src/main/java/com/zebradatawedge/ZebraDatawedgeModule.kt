@@ -35,11 +35,25 @@ class ZebraDataWedgeModule(
 
   @Volatile private var profileConfigured: Boolean = false
 
+  // The state the last setScannerEnabled call asked for. DataWedge's
+  // SCANNER_INPUT_PLUGIN result does not echo the parameter back, so we have to
+  // remember what we asked for to interpret the reply.
+  @Volatile private var requestedScannerEnabled: Boolean = false
+
   private val mainHandler = Handler(Looper.getMainLooper())
   private var pendingPromise: Promise? = null
   private var pendingResult: WritableMap? = null
-  private var pendingRemaining: Int = 0
   private var pendingTimeout: Runnable? = null
+  private var pendingAttemptsLeft: Int = 0
+  private var pendingPackageEnabled: Boolean = false
+
+  // Answers accumulate here rather than in pendingResult. Reading a value back
+  // out of a WritableNativeMap is unsafe: the first read populates a local cache
+  // that later writes do not invalidate, so a subsequent get throws
+  // NoSuchKeyException. Write to the bridge map once, at the end, and never read
+  // from it.
+  private var pendingServiceEnabled: Boolean? = null
+  private var pendingProfileExists: Boolean? = null
 
   private val receiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -148,7 +162,9 @@ class ZebraDataWedgeModule(
     if (version == null) result.putNull("version") else result.putString("version", version)
 
     if (!installed || !packageEnabled) {
+      // No DataWedge to ask, so its service state is known by deduction.
       result.putBoolean("serviceEnabled", false)
+      result.putBoolean("serviceStatusKnown", true)
       result.putBoolean("profileExists", false)
       result.putBoolean("enabled", false)
       promise.resolve(result)
@@ -162,14 +178,28 @@ class ZebraDataWedgeModule(
     }
     pendingPromise = promise
     pendingResult = result
-    pendingRemaining = 2
+    pendingPackageEnabled = packageEnabled
+    pendingServiceEnabled = null
+    pendingProfileExists = null
+    pendingAttemptsLeft = QUERY_ATTEMPTS
+    sendDiagnosticsQueries()
+  }
+
+  // The first query of a session races DataWedge's cold start and the SET_CONFIG
+  // it is still applying, so a silent attempt is expected rather than
+  // exceptional. Retry before concluding anything.
+  private fun sendDiagnosticsQueries() {
+    pendingAttemptsLeft--
 
     sendDataWedgeBroadcast("com.symbol.datawedge.api.GET_DATAWEDGE_STATUS", extraString = null)
     sendDataWedgeBroadcast("com.symbol.datawedge.api.GET_PROFILES_LIST", extraString = null)
 
-    val timeout = Runnable { finalizePending(fillMissing = true) }
+    val timeout = Runnable {
+      pendingTimeout = null
+      if (pendingAttemptsLeft > 0) sendDiagnosticsQueries() else finalizePending()
+    }
     pendingTimeout = timeout
-    mainHandler.postDelayed(timeout, 2000)
+    mainHandler.postDelayed(timeout, QUERY_TIMEOUT_MS)
   }
 
   @ReactMethod
@@ -205,6 +235,7 @@ class ZebraDataWedgeModule(
   @ReactMethod
   fun setScannerEnabled(enabled: Boolean, promise: Promise) {
     try {
+      requestedScannerEnabled = enabled
       sendDataWedgeBroadcast(
         "com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN",
         extraString = if (enabled) "ENABLE_PLUGIN" else "DISABLE_PLUGIN"
@@ -266,45 +297,101 @@ class ZebraDataWedgeModule(
     val status = notification.getString("STATUS") ?: return
     // WAITING = scanner enabled and ready; SCANNING = actively scanning.
     // DISABLED / DISCONNECTED / CONNECTED = not ready to scan.
+    //
+    // This is a *change* feed: DataWedge only broadcasts it on a transition, so
+    // it can confirm readiness but can never establish it. Enabling a scanner
+    // that is already enabled produces no transition and therefore no
+    // notification. Initial readiness comes from handleScannerPluginResult.
     val ready = status == "WAITING" || status == "SCANNING" || status == "IDLE"
-    val event = Arguments.createMap().apply { putString("result", if (ready) "SUCCESS" else "FAILURE") }
-    emitEvent("onScannerPluginResult", event)
+    emitScannerPluginResult(if (ready) "SUCCESS" else "FAILURE")
   }
 
   private fun handleResult(intent: Intent) {
     val extras = intent.extras ?: return
-    val result = pendingResult ?: return
+    handleScannerPluginResult(extras)
+    handleDiagnosticsResult(extras)
+  }
+
+  /**
+   * SCANNER_INPUT_PLUGIN always answers on RESULT_ACTION, which makes it the
+   * authoritative readiness signal — unlike SCANNER_STATUS, it arrives whether
+   * or not the scanner actually changed state.
+   *
+   * Note that DataWedge answers "enable a scanner that is already enabled" with
+   * FAILURE / ALREADY_ENABLED. That is the scanner being ready, not an error.
+   */
+  private fun handleScannerPluginResult(extras: android.os.Bundle) {
+    val command = extras.getString("COMMAND") ?: return
+    if (!command.endsWith("SCANNER_INPUT_PLUGIN")) return
+
+    if (extras.getString("RESULT") == "SUCCESS") {
+      emitScannerPluginResult("SUCCESS")
+      return
+    }
+
+    val causes = resultInfoCauses(extras)
+    val outcome = when {
+      causes.any { it.contains("ALREADY_ENABLED") } -> "ALREADY_ENABLED"
+      causes.any { it.contains("ALREADY_DISABLED") } -> "ALREADY_DISABLED"
+      else -> "FAILURE"
+    }
+    emitScannerPluginResult(outcome)
+  }
+
+  // RESULT_INFO values are String or String[] depending on DataWedge version.
+  private fun resultInfoCauses(extras: android.os.Bundle): List<String> {
+    val info = extras.getBundle("RESULT_INFO") ?: return emptyList()
+    return info.keySet().flatMap { key ->
+      info.getString(key)?.let { listOf(it) }
+        ?: info.getStringArray(key)?.toList()
+        ?: emptyList()
+    }
+  }
+
+  private fun emitScannerPluginResult(result: String) {
+    val event = Arguments.createMap().apply {
+      putString("result", result)
+      putBoolean("requestedEnabled", requestedScannerEnabled)
+    }
+    emitEvent("onScannerPluginResult", event)
+  }
+
+  private fun handleDiagnosticsResult(extras: android.os.Bundle) {
+    if (pendingPromise == null) return
     if (extras.containsKey("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")) {
       val status = extras.getString("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")
-      result.putBoolean("serviceEnabled", status.equals("enabled", ignoreCase = true))
-      pendingRemaining--
+      pendingServiceEnabled = status.equals("enabled", ignoreCase = true)
     }
     if (extras.containsKey("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")) {
       val profiles = extras.getStringArray("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")
-      val found = profiles?.any { it == profileName } == true
-      result.putBoolean("profileExists", found)
-      pendingRemaining--
+      pendingProfileExists = profiles?.any { it == profileName } == true
     }
-    if (pendingRemaining <= 0) finalizePending(fillMissing = false)
+    if (pendingServiceEnabled != null && pendingProfileExists != null) finalizePending()
   }
 
-  private fun finalizePending(fillMissing: Boolean) {
+  private fun finalizePending() {
     val promise = pendingPromise ?: return
     val result = pendingResult ?: return
     pendingTimeout?.let { mainHandler.removeCallbacks(it) }
     pendingTimeout = null
 
-    if (fillMissing) {
-      if (!result.hasKey("serviceEnabled")) result.putBoolean("serviceEnabled", false)
-      if (!result.hasKey("profileExists")) result.putBoolean("profileExists", false)
-    }
-    val pkg = if (result.hasKey("packageEnabled")) result.getBoolean("packageEnabled") else false
-    val svc = if (result.hasKey("serviceEnabled")) result.getBoolean("serviceEnabled") else false
-    result.putBoolean("enabled", pkg && svc)
+    // An unanswered query means "unknown", never "disabled" — the caller
+    // decides what to do with that, and reporting it as disabled is what makes
+    // a working scanner surface a bogus "DataWedge is disabled" banner.
+    val serviceEnabled = pendingServiceEnabled
+    result.putBoolean("serviceEnabled", serviceEnabled ?: false)
+    result.putBoolean("serviceStatusKnown", serviceEnabled != null)
+    result.putBoolean("profileExists", pendingProfileExists ?: false)
+    result.putBoolean(
+      "enabled",
+      if (serviceEnabled != null) pendingPackageEnabled && serviceEnabled else pendingPackageEnabled
+    )
 
     pendingPromise = null
     pendingResult = null
-    pendingRemaining = 0
+    pendingServiceEnabled = null
+    pendingProfileExists = null
+    pendingAttemptsLeft = 0
     promise.resolve(result)
   }
 
@@ -359,5 +446,7 @@ class ZebraDataWedgeModule(
     private const val ACTION_RESULT = "com.symbol.datawedge.api.RESULT_ACTION"
     private const val ACTION_NOTIFICATION = "com.symbol.datawedge.api.NOTIFICATION_ACTION"
     private const val ACTION_DATAWEDGE_FROM_API = "com.symbol.datawedge.api.ACTION"
+    private const val QUERY_TIMEOUT_MS = 2000L
+    private const val QUERY_ATTEMPTS = 2
   }
 }

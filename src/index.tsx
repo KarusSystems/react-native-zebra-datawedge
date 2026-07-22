@@ -13,4 +13,10 @@ export type {
   UseZebraScannerOptions,
   UseZebraScannerResult,
 } from './useZebraScanner';
-export type { BarcodeDecoder, BarcodeEvent, Diagnostics } from './types';
+export type {
+  BarcodeDecoder,
+  BarcodeEvent,
+  Diagnostics,
+  ScannerPluginResult,
+  ScannerState,
+} from './types';

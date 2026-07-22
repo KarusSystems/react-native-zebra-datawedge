@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { ScannerState } from '@karus-systems/react-native-zebra-datawedge';
 import { useScannerContext } from '../context';
 
 export function ScanScreen() {
@@ -14,24 +15,9 @@ export function ScanScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.statusBlock}>
-        <View
-          style={[
-            styles.statusDot,
-            scanner.hasHardwareScanner && scanner.isScannerReady
-              ? styles.dotOk
-              : scanner.hasHardwareScanner
-                ? styles.dotPending
-                : styles.dotBad,
-          ]}
-        />
+        <View style={[styles.statusDot, STATUS[scanner.scannerState].dot]} />
         <Text style={styles.statusText}>
-          {scanner.isChecking
-            ? 'Checking scanner…'
-            : scanner.hasHardwareScanner
-              ? scanner.isScannerReady
-                ? 'Scanner ready'
-                : 'Enabling scanner…'
-              : 'Scanner unavailable — see Diagnostics tab'}
+          {STATUS[scanner.scannerState].label}
         </Text>
       </View>
 
@@ -101,6 +87,23 @@ function Btn({
   );
 }
 
+const STATUS: Record<ScannerState, { label: string; dot: object }> = {
+  checking: { label: 'Checking scanner…', dot: { backgroundColor: '#F59E0B' } },
+  unavailable: {
+    label: 'Scanner unavailable — see Diagnostics tab',
+    dot: { backgroundColor: '#EF4444' },
+  },
+  stopped: {
+    label: 'Scanner stopped — press Start reading',
+    dot: { backgroundColor: '#9CA3AF' },
+  },
+  enabling: {
+    label: 'Enabling scanner…',
+    dot: { backgroundColor: '#F59E0B' },
+  },
+  ready: { label: 'Scanner ready', dot: { backgroundColor: '#10B981' } },
+};
+
 const styles = StyleSheet.create({
   root: { flex: 1, padding: 16 },
   statusBlock: {
@@ -114,9 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginRight: 8,
   },
-  dotOk: { backgroundColor: '#10B981' },
-  dotPending: { backgroundColor: '#F59E0B' },
-  dotBad: { backgroundColor: '#EF4444' },
+
   statusText: { fontSize: 14, color: '#374151' },
   card: {
     backgroundColor: '#FFFFFF',

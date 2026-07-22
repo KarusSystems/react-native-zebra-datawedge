@@ -4,7 +4,7 @@ import {
   Platform,
   type EmitterSubscription,
 } from 'react-native';
-import type { BarcodeEvent, Diagnostics } from './types';
+import type { BarcodeEvent, Diagnostics, ScannerPluginResult } from './types';
 
 const LINKING_ERROR =
   "The package '@karus-systems/react-native-zebra-datawedge' doesn't seem to be linked. Make sure:\n\n" +
@@ -71,7 +71,10 @@ export function addBarcodeListener(
 }
 
 export function addScannerPluginResultListener(
-  listener: (event: { result: 'SUCCESS' | 'FAILURE' }) => void
+  listener: (event: {
+    result: ScannerPluginResult;
+    requestedEnabled: boolean;
+  }) => void
 ): EmitterSubscription {
   if (!emitter) {
     return { remove: () => {} } as EmitterSubscription;

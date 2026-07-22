@@ -5206,6 +5206,7 @@ __metadata:
     prettier: "npm:^2.4.1"
     react: "npm:18.2.0"
     react-native: "npm:0.71.19"
+    react-native-safe-area-context: "npm:4.5.3"
     react-test-renderer: "npm:18.2.0"
     typescript: "npm:4.8.4"
   languageName: unknown
@@ -14322,6 +14323,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-safe-area-context@npm:4.5.3":
+  version: 4.5.3
+  resolution: "react-native-safe-area-context@npm:4.5.3"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/17e5f32884a2b78a10c75393c57105792959a42b2fa1054a0b6ca6791519bee0fc3ddd20c179dd49eac8d14698e627cc25075af57ad9d0ad08fcb376590b8d26
+  languageName: node
+  linkType: hard
+
+"react-native-safe-area-context@npm:~5.6.2":
+  version: 5.6.2
+  resolution: "react-native-safe-area-context@npm:5.6.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/3c8df21a1dbac83116b9c9bd5d20b7c1bb7649ecef44a111af6fb6b237241f5f4d692189eec30a69f5701b857249257da3621b9e17165460a2bb71faac7b92ae
+  languageName: node
+  linkType: hard
+
 "react-native-web@npm:~0.21.0":
   version: 0.21.2
   resolution: "react-native-web@npm:0.21.2"
@@ -14356,6 +14377,7 @@ __metadata:
     react-native: "npm:0.83.4"
     react-native-builder-bob: "npm:^0.41.0"
     react-native-monorepo-config: "npm:^0.3.3"
+    react-native-safe-area-context: "npm:~5.6.2"
     react-native-web: "npm:~0.21.0"
   languageName: unknown
   linkType: soft

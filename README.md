@@ -127,6 +127,27 @@ The hook calls `configureProfile()` + `getDiagnostics()` on mount, subscribes
 to barcode events, and exposes helpers to start/stop the scanner and
 re-apply the profile.
 
+### Reporting scanner status
+
+Use `scannerState` rather than `isScannerReady` for anything a user reads. The
+boolean cannot tell a deliberately stopped scanner from one still starting up,
+so UI built on it announces "Enabling scanner…" after the user presses stop.
+
+```ts
+type ScannerState =
+  | 'checking'     // diagnostics still running
+  | 'unavailable'  // no usable DataWedge — send them to your troubleshoot screen
+  | 'stopped'      // stopReading() was called
+  | 'enabling'     // enable requested, awaiting DataWedge
+  | 'ready';       // confirmed enabled
+```
+
+`isScannerReady` remains available and is exactly `scannerState === 'ready'`.
+
+The scanner starts automatically once one is available, because barcodes are
+delivered from mount regardless — reporting "stopped" while scans land would be
+a lie. Pass `autoStart: false` if you want to drive it entirely by hand.
+
 > **Multi-screen apps:** call `useZebraScanner` **once** at the top of your
 > tree and share it via React context. Calling the hook independently in
 > each screen would create independent subscriptions and independent
@@ -166,6 +187,7 @@ type Diagnostics = {
   installed: boolean;        // com.symbol.datawedge is on the device
   packageEnabled: boolean;   // DataWedge not disabled in Android settings
   serviceEnabled: boolean;   // DataWedge's own in-app "DataWedge enabled" toggle
+  serviceStatusKnown: boolean; // false if DataWedge never answered the query
   enabled: boolean;          // packageEnabled && serviceEnabled
   version: string | null;    // DataWedge versionName, if available
   profileName: string;       // your configured profile name
@@ -174,6 +196,16 @@ type Diagnostics = {
   profileConfigured: boolean; // configureProfile() succeeded this session
 };
 ```
+
+`serviceEnabled` is read over a broadcast round-trip that can time out, most
+often on the first query of a session while the DataWedge service is still
+cold-starting. When that happens `serviceStatusKnown` is `false` and
+`serviceEnabled` is meaningless — a timeout means "no answer", not "disabled".
+
+`useZebraScanner` handles this for you: it keeps the last known-good answer,
+falls back to the (synchronously verifiable) package state when there isn't one,
+and re-queries in the background. If you call `getDiagnostics()` directly, check
+`serviceStatusKnown` before telling a user their scanner is unavailable.
 
 `getDiagnostics()` fires two DataWedge query broadcasts in parallel with a
 2-second timeout — missing fields degrade to `false` rather than rejecting,

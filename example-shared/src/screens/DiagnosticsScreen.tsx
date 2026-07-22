@@ -40,11 +40,18 @@ function diagnosticsToRows(d: Diagnostics | null): Row[] {
     },
     {
       label: 'Service enabled (in-app toggle)',
-      ok: d.serviceEnabled,
-      value: d.serviceEnabled ? 'Enabled' : 'Disabled',
-      hint: d.serviceEnabled
-        ? undefined
-        : 'Open the DataWedge app and toggle "DataWedge enabled" on.',
+      // An unanswered query is not a failing check — don't paint it red.
+      ok: !d.serviceStatusKnown || d.serviceEnabled,
+      value: !d.serviceStatusKnown
+        ? 'Unknown'
+        : d.serviceEnabled
+          ? 'Enabled'
+          : 'Disabled',
+      hint: !d.serviceStatusKnown
+        ? 'DataWedge did not answer the status query. Pull to refresh.'
+        : d.serviceEnabled
+          ? undefined
+          : 'Open the DataWedge app and toggle "DataWedge enabled" on.',
     },
     {
       label: 'DataWedge version',

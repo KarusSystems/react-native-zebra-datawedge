@@ -7,7 +7,7 @@ export {
   openDataWedgeAppDetails,
   setScannerEnabled,
   triggerSoftScan,
-} from './NativeZebraDataWedge';
+} from './NativeZebraDatawedge';
 export { useZebraScanner } from './useZebraScanner';
 export type {
   UseZebraScannerOptions,

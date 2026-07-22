@@ -5,7 +5,7 @@ import {
   configureProfile,
   getDiagnostics,
   setScannerEnabled,
-} from './NativeZebraDataWedge';
+} from './NativeZebraDatawedge';
 import {
   deriveScannerState,
   reconcileDiagnostics,

@@ -7,10 +7,12 @@ import {
   setScannerEnabled,
 } from './NativeZebraDataWedge';
 import {
+  deriveScannerState,
   reconcileDiagnostics,
   resolveScannerPluginResult,
+  type ScannerPhase,
 } from './scannerState';
-import type { BarcodeEvent, Diagnostics } from './types';
+import type { BarcodeEvent, Diagnostics, ScannerState } from './types';
 
 /**
  * How long to wait for DataWedge to confirm an enable before assuming it
@@ -23,12 +25,19 @@ const READY_TIMEOUT_MS = 3000;
 export type UseZebraScannerOptions = {
   onBarcode?: (event: BarcodeEvent) => void;
   autoConfigure?: boolean;
+  /**
+   * Enable the scanner as soon as one is available. On by default: barcodes are
+   * delivered from mount regardless, so leaving the reported state at "stopped"
+   * until someone calls startReading would describe the scanner inaccurately.
+   */
+  autoStart?: boolean;
 };
 
 export type UseZebraScannerResult = {
   hasHardwareScanner: boolean;
   isChecking: boolean;
   isScannerReady: boolean;
+  scannerState: ScannerState;
   diagnostics: Diagnostics | null;
   startReading: () => void;
   stopReading: () => void;
@@ -39,7 +48,7 @@ export type UseZebraScannerResult = {
 export function useZebraScanner(
   options: UseZebraScannerOptions = {}
 ): UseZebraScannerResult {
-  const { onBarcode, autoConfigure = true } = options;
+  const { onBarcode, autoConfigure = true, autoStart = true } = options;
   const callbackRef = useRef(onBarcode);
   callbackRef.current = onBarcode;
 
@@ -50,7 +59,7 @@ export function useZebraScanner(
   const readyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [isChecking, setIsChecking] = useState(true);
-  const [isScannerReady, setIsScannerReady] = useState(false);
+  const [phase, setPhase] = useState<ScannerPhase>('stopped');
 
   const clearReadyTimeout = useCallback(() => {
     if (readyTimeoutRef.current !== null) {
@@ -121,9 +130,11 @@ export function useZebraScanner(
       // Ignore a reply to a request we have since superseded.
       if (event.requestedEnabled !== intendedEnabledRef.current) return;
       clearReadyTimeout();
-      setIsScannerReady(
-        resolveScannerPluginResult(event.result, event.requestedEnabled)
+      const ready = resolveScannerPluginResult(
+        event.result,
+        event.requestedEnabled
       );
+      setPhase(ready ? 'ready' : 'stopped');
     });
     return () => sub.remove();
   }, [clearReadyTimeout]);
@@ -133,14 +144,14 @@ export function useZebraScanner(
   const startReading = useCallback(() => {
     enabledRef.current = true;
     intendedEnabledRef.current = true;
-    setIsScannerReady(false);
+    setPhase('enabling');
     clearReadyTimeout();
     // Assume the enable landed if DataWedge never replies. A wrong optimistic
     // "ready" costs the user one trigger press; a stuck spinner costs them the
     // whole screen.
     readyTimeoutRef.current = setTimeout(() => {
       readyTimeoutRef.current = null;
-      if (intendedEnabledRef.current) setIsScannerReady(true);
+      if (intendedEnabledRef.current) setPhase('ready');
     }, READY_TIMEOUT_MS);
     setScannerEnabled(true).catch(() => {});
   }, [clearReadyTimeout]);
@@ -149,15 +160,28 @@ export function useZebraScanner(
     enabledRef.current = false;
     intendedEnabledRef.current = false;
     clearReadyTimeout();
-    setIsScannerReady(false);
+    setPhase('stopped');
     setScannerEnabled(false).catch(() => {});
   }, [clearReadyTimeout]);
 
+  const hasHardwareScanner =
+    !!diagnostics && diagnostics.installed && diagnostics.enabled;
+
+  // Barcodes are delivered from mount, so start for real rather than leaving
+  // the state claiming "stopped" while scans are landing.
+  useEffect(() => {
+    if (autoStart && hasHardwareScanner && phase === 'stopped') {
+      startReading();
+    }
+    // Deliberately not depending on `phase`: a later stopReading() must stick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, hasHardwareScanner, startReading]);
+
   return {
-    hasHardwareScanner:
-      !!diagnostics && diagnostics.installed && diagnostics.enabled,
+    hasHardwareScanner,
     isChecking,
-    isScannerReady,
+    isScannerReady: phase === 'ready',
+    scannerState: deriveScannerState({ isChecking, hasHardwareScanner, phase }),
     diagnostics,
     startReading,
     stopReading,

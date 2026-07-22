@@ -127,6 +127,27 @@ The hook calls `configureProfile()` + `getDiagnostics()` on mount, subscribes
 to barcode events, and exposes helpers to start/stop the scanner and
 re-apply the profile.
 
+### Reporting scanner status
+
+Use `scannerState` rather than `isScannerReady` for anything a user reads. The
+boolean cannot tell a deliberately stopped scanner from one still starting up,
+so UI built on it announces "Enabling scanner…" after the user presses stop.
+
+```ts
+type ScannerState =
+  | 'checking'     // diagnostics still running
+  | 'unavailable'  // no usable DataWedge — send them to your troubleshoot screen
+  | 'stopped'      // stopReading() was called
+  | 'enabling'     // enable requested, awaiting DataWedge
+  | 'ready';       // confirmed enabled
+```
+
+`isScannerReady` remains available and is exactly `scannerState === 'ready'`.
+
+The scanner starts automatically once one is available, because barcodes are
+delivered from mount regardless — reporting "stopped" while scans land would be
+a lie. Pass `autoStart: false` if you want to drive it entirely by hand.
+
 > **Multi-screen apps:** call `useZebraScanner` **once** at the top of your
 > tree and share it via React context. Calling the hook independently in
 > each screen would create independent subscriptions and independent

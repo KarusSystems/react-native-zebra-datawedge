@@ -1,12 +1,17 @@
 import { useMemo, useState } from 'react';
 import {
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+// react-native's own SafeAreaView is a no-op on Android, which left the header
+// under the status bar and the tab row under the navigation buttons.
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import {
   useZebraScanner,
   type BarcodeEvent,
@@ -25,6 +30,15 @@ type Props = {
 };
 
 export default function App({ runtimeMode }: Props) {
+  return (
+    <SafeAreaProvider>
+      <AppContent runtimeMode={runtimeMode} />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent({ runtimeMode }: Props) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('scan');
   const [history, setHistory] = useState<Array<BarcodeEvent & { at: number }>>(
     []
@@ -50,9 +64,9 @@ export default function App({ runtimeMode }: Props) {
 
   return (
     <ScannerContext.Provider value={contextValue}>
-      <SafeAreaView style={styles.root}>
+      <View style={styles.root}>
         <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <Text style={styles.title}>Zebra DataWedge Demo</Text>
           <View
             style={[
@@ -70,7 +84,7 @@ export default function App({ runtimeMode }: Props) {
           {tab === 'diagnostics' && <DiagnosticsScreen />}
           {tab === 'about' && <AboutScreen />}
         </View>
-        <View style={styles.tabs}>
+        <View style={[styles.tabs, { paddingBottom: insets.bottom }]}>
           <TabButton
             label="Scan"
             active={tab === 'scan'}
@@ -87,7 +101,7 @@ export default function App({ runtimeMode }: Props) {
             onPress={() => setTab('about')}
           />
         </View>
-      </SafeAreaView>
+      </View>
     </ScannerContext.Provider>
   );
 }
@@ -117,7 +131,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F5F7FA' },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',

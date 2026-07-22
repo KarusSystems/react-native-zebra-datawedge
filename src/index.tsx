@@ -18,4 +18,5 @@ export type {
   BarcodeEvent,
   Diagnostics,
   ScannerPluginResult,
+  ScannerState,
 } from './types';

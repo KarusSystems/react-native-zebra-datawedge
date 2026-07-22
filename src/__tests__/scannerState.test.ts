@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  deriveScannerState,
   reconcileDiagnostics,
   resolveScannerPluginResult,
 } from '../scannerState';
@@ -98,6 +99,49 @@ describe('reconcileDiagnostics', () => {
     );
     expect(next.profileExists).toBe(true);
     expect(next.version).toBe('11.4');
+  });
+});
+
+describe('deriveScannerState', () => {
+  it('reports checking while diagnostics are still running', () => {
+    expect(
+      deriveScannerState({
+        isChecking: true,
+        hasHardwareScanner: false,
+        phase: 'stopped',
+      })
+    ).toBe('checking');
+  });
+
+  it('reports unavailable when there is no usable DataWedge', () => {
+    expect(
+      deriveScannerState({
+        isChecking: false,
+        hasHardwareScanner: false,
+        phase: 'enabling',
+      })
+    ).toBe('unavailable');
+  });
+
+  // The reported bug: stopping the scanner rendered as "Enabling scanner…",
+  // because a single isScannerReady boolean cannot tell stopped from pending.
+  it('distinguishes a stopped scanner from one still enabling', () => {
+    const common = { isChecking: false, hasHardwareScanner: true };
+    expect(deriveScannerState({ ...common, phase: 'stopped' })).toBe('stopped');
+    expect(deriveScannerState({ ...common, phase: 'enabling' })).toBe(
+      'enabling'
+    );
+    expect(deriveScannerState({ ...common, phase: 'ready' })).toBe('ready');
+  });
+
+  it('lets checking win over an unsettled phase', () => {
+    expect(
+      deriveScannerState({
+        isChecking: true,
+        hasHardwareScanner: true,
+        phase: 'ready',
+      })
+    ).toBe('checking');
   });
 });
 

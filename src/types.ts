@@ -28,6 +28,18 @@ export type ScannerPluginResult =
   | 'ALREADY_ENABLED'
   | 'ALREADY_DISABLED';
 
+/**
+ * What the scanner is actually doing, for UI that needs to say something
+ * truthful. A single "ready" boolean conflates `stopped` with `enabling` and
+ * makes a deliberately stopped scanner look like it is still starting up.
+ */
+export type ScannerState =
+  | 'checking'
+  | 'unavailable'
+  | 'stopped'
+  | 'enabling'
+  | 'ready';
+
 export type Diagnostics = {
   installed: boolean;
   packageEnabled: boolean;

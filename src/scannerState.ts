@@ -1,4 +1,17 @@
-import type { Diagnostics, ScannerPluginResult } from './types';
+import type { Diagnostics, ScannerPluginResult, ScannerState } from './types';
+
+/** What the hook is currently trying to do, before availability is considered. */
+export type ScannerPhase = 'stopped' | 'enabling' | 'ready';
+
+export function deriveScannerState(input: {
+  isChecking: boolean;
+  hasHardwareScanner: boolean;
+  phase: ScannerPhase;
+}): ScannerState {
+  if (input.isChecking) return 'checking';
+  if (!input.hasHardwareScanner) return 'unavailable';
+  return input.phase;
+}
 
 /**
  * Merge a fresh diagnostics query with what we already knew.

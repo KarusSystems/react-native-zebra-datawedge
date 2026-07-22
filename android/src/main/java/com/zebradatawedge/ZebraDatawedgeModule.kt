@@ -43,9 +43,17 @@ class ZebraDataWedgeModule(
   private val mainHandler = Handler(Looper.getMainLooper())
   private var pendingPromise: Promise? = null
   private var pendingResult: WritableMap? = null
-  private var pendingRemaining: Int = 0
   private var pendingTimeout: Runnable? = null
   private var pendingAttemptsLeft: Int = 0
+  private var pendingPackageEnabled: Boolean = false
+
+  // Answers accumulate here rather than in pendingResult. Reading a value back
+  // out of a WritableNativeMap is unsafe: the first read populates a local cache
+  // that later writes do not invalidate, so a subsequent get throws
+  // NoSuchKeyException. Write to the bridge map once, at the end, and never read
+  // from it.
+  private var pendingServiceEnabled: Boolean? = null
+  private var pendingProfileExists: Boolean? = null
 
   private val receiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -170,6 +178,9 @@ class ZebraDataWedgeModule(
     }
     pendingPromise = promise
     pendingResult = result
+    pendingPackageEnabled = packageEnabled
+    pendingServiceEnabled = null
+    pendingProfileExists = null
     pendingAttemptsLeft = QUERY_ATTEMPTS
     sendDiagnosticsQueries()
   }
@@ -179,7 +190,6 @@ class ZebraDataWedgeModule(
   // exceptional. Retry before concluding anything.
   private fun sendDiagnosticsQueries() {
     pendingAttemptsLeft--
-    pendingRemaining = 2
 
     sendDataWedgeBroadcast("com.symbol.datawedge.api.GET_DATAWEDGE_STATUS", extraString = null)
     sendDataWedgeBroadcast("com.symbol.datawedge.api.GET_PROFILES_LIST", extraString = null)
@@ -347,20 +357,16 @@ class ZebraDataWedgeModule(
   }
 
   private fun handleDiagnosticsResult(extras: android.os.Bundle) {
-    val result = pendingResult ?: return
-    // A retry re-asks both questions, so only count an answer we did not have.
+    if (pendingPromise == null) return
     if (extras.containsKey("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")) {
       val status = extras.getString("com.symbol.datawedge.api.RESULT_GET_DATAWEDGE_STATUS")
-      if (!result.hasKey("serviceEnabled")) pendingRemaining--
-      result.putBoolean("serviceEnabled", status.equals("enabled", ignoreCase = true))
+      pendingServiceEnabled = status.equals("enabled", ignoreCase = true)
     }
     if (extras.containsKey("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")) {
       val profiles = extras.getStringArray("com.symbol.datawedge.api.RESULT_GET_PROFILES_LIST")
-      val found = profiles?.any { it == profileName } == true
-      if (!result.hasKey("profileExists")) pendingRemaining--
-      result.putBoolean("profileExists", found)
+      pendingProfileExists = profiles?.any { it == profileName } == true
     }
-    if (pendingRemaining <= 0) finalizePending()
+    if (pendingServiceEnabled != null && pendingProfileExists != null) finalizePending()
   }
 
   private fun finalizePending() {
@@ -372,18 +378,19 @@ class ZebraDataWedgeModule(
     // An unanswered query means "unknown", never "disabled" — the caller
     // decides what to do with that, and reporting it as disabled is what makes
     // a working scanner surface a bogus "DataWedge is disabled" banner.
-    val serviceKnown = result.hasKey("serviceEnabled")
-    if (!serviceKnown) result.putBoolean("serviceEnabled", false)
-    result.putBoolean("serviceStatusKnown", serviceKnown)
-    if (!result.hasKey("profileExists")) result.putBoolean("profileExists", false)
-
-    val pkg = if (result.hasKey("packageEnabled")) result.getBoolean("packageEnabled") else false
-    val svc = result.getBoolean("serviceEnabled")
-    result.putBoolean("enabled", if (serviceKnown) pkg && svc else pkg)
+    val serviceEnabled = pendingServiceEnabled
+    result.putBoolean("serviceEnabled", serviceEnabled ?: false)
+    result.putBoolean("serviceStatusKnown", serviceEnabled != null)
+    result.putBoolean("profileExists", pendingProfileExists ?: false)
+    result.putBoolean(
+      "enabled",
+      if (serviceEnabled != null) pendingPackageEnabled && serviceEnabled else pendingPackageEnabled
+    )
 
     pendingPromise = null
     pendingResult = null
-    pendingRemaining = 0
+    pendingServiceEnabled = null
+    pendingProfileExists = null
     pendingAttemptsLeft = 0
     promise.resolve(result)
   }

@@ -61,7 +61,6 @@ class ZebraDataWedgeModule(
       when (intent.action) {
         scanAction -> handleScan(intent)
         ACTION_RESULT -> handleResult(intent)
-        ACTION_NOTIFICATION -> handleNotification(intent)
       }
     }
   }
@@ -69,14 +68,12 @@ class ZebraDataWedgeModule(
   init {
     reactContext.addLifecycleEventListener(this)
     registerReceiver()
-    registerForScannerStatusNotifications()
   }
 
   private fun registerReceiver() {
     val filter = IntentFilter().apply {
       addAction(scanAction)
       addAction(ACTION_RESULT)
-      addAction(ACTION_NOTIFICATION)
       addCategory(Intent.CATEGORY_DEFAULT)
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -85,18 +82,6 @@ class ZebraDataWedgeModule(
       @Suppress("UnspecifiedRegisterReceiverFlag")
       reactContext.registerReceiver(receiver, filter)
     }
-  }
-
-  private fun registerForScannerStatusNotifications() {
-    val bundle = android.os.Bundle().apply {
-      putString("APPLICATION_NAME", reactContext.packageName)
-      putString("NOTIFICATION_TYPE", "SCANNER_STATUS")
-    }
-    val intent = Intent(ACTION_DATAWEDGE_FROM_API).apply {
-      setPackage(DW_PACKAGE)
-      putExtra("com.symbol.datawedge.api.REGISTER_FOR_NOTIFICATION", bundle)
-    }
-    reactContext.sendBroadcast(intent)
   }
 
   override fun onHostResume() {
@@ -291,21 +276,6 @@ class ZebraDataWedgeModule(
     emitEvent("onBarcode", event)
   }
 
-  private fun handleNotification(intent: Intent) {
-    val notification = intent.getBundleExtra("com.symbol.datawedge.api.NOTIFICATION") ?: return
-    if (notification.getString("NOTIFICATION_TYPE") != "SCANNER_STATUS") return
-    val status = notification.getString("STATUS") ?: return
-    // WAITING = scanner enabled and ready; SCANNING = actively scanning.
-    // DISABLED / DISCONNECTED / CONNECTED = not ready to scan.
-    //
-    // This is a *change* feed: DataWedge only broadcasts it on a transition, so
-    // it can confirm readiness but can never establish it. Enabling a scanner
-    // that is already enabled produces no transition and therefore no
-    // notification. Initial readiness comes from handleScannerPluginResult.
-    val ready = status == "WAITING" || status == "SCANNING" || status == "IDLE"
-    emitScannerPluginResult(if (ready) "SUCCESS" else "FAILURE")
-  }
-
   private fun handleResult(intent: Intent) {
     val extras = intent.extras ?: return
     handleScannerPluginResult(extras)
@@ -444,7 +414,6 @@ class ZebraDataWedgeModule(
     const val NAME = "ZebraDataWedge"
     private const val DW_PACKAGE = "com.symbol.datawedge"
     private const val ACTION_RESULT = "com.symbol.datawedge.api.RESULT_ACTION"
-    private const val ACTION_NOTIFICATION = "com.symbol.datawedge.api.NOTIFICATION_ACTION"
     private const val ACTION_DATAWEDGE_FROM_API = "com.symbol.datawedge.api.ACTION"
     private const val QUERY_TIMEOUT_MS = 2000L
     private const val QUERY_ATTEMPTS = 2

@@ -245,9 +245,39 @@ cd example-bare && npx react-native run-android
 - Supports minSdk 21+ at the library level. The bare-RN example is pinned to
   RN 0.71.19 to stay buildable for API 22 devices; the Expo example runs on
   modern RN (API 24+).
-- Tested against DataWedge 6.x+ on Zebra TC series. Older firmware versions
-  may not support `setScannerEnabled` — scans will still filter correctly
-  on the JS side but the hardware trigger won't pause.
+- Needs DataWedge 6.x or later. Older firmware versions may not support
+  `setScannerEnabled` — scans will still filter correctly on the JS side but
+  the hardware trigger won't pause.
+
+### Supported devices
+
+**Tested on hardware.** A barcode was scanned on the real device with this
+library.
+
+| Device | Android | DataWedge | Library | Notes |
+|---|---|---|---|---|
+| Zebra TC8300 | 11 | 11.3.28 | 0.2.2 | Needs 0.2.2 or later. Earlier versions crash DataWedge 11 ([#7](https://github.com/KarusSystems/react-native-zebra-datawedge/pull/7)). |
+| Zebra TC26 | — | 15.0.104 | 0.2.2 | |
+| Zebra TC8000 | 5.1 (API 22) | — | — | Use the classic autolinking setup shown in [`example-bare/`](example-bare). |
+
+**Should work, not verified.** These devices ship DataWedge 6.x or later, so
+the same intent API is present. Nobody has confirmed them on hardware yet.
+
+| Family | Models |
+|---|---|
+| TC2x | TC21, TC22, TC27 |
+| TC5x | TC51, TC52, TC53, TC56, TC57, TC58 |
+| TC7x | TC70x, TC72, TC73, TC75x, TC77, TC78 |
+| MC series | MC2200, MC2700, MC3300, MC9300 |
+| EC series | EC30, EC50, EC55 |
+| ET tablets with a scanner | ET40, ET45, ET51, ET56 |
+
+DataWedge behaviour differs between major versions: DataWedge 15 hid two bugs
+that DataWedge 11 exposed. If you run this library on a device that is not in
+the tested table, please
+[open an issue](https://github.com/KarusSystems/react-native-zebra-datawedge/issues)
+with the model, the Android version, the DataWedge version and the result, so
+the device can move to the correct table.
 
 ## Why this vs. existing libraries?
 

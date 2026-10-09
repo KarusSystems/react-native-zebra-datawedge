@@ -18,6 +18,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import java.util.concurrent.atomic.AtomicInteger
 
 class ZebraDataWedgeModule(
   private val reactContext: ReactApplicationContext
@@ -40,6 +41,7 @@ class ZebraDataWedgeModule(
   // remember what we asked for to interpret the reply.
   @Volatile private var requestedScannerEnabled: Boolean = false
 
+  private val commandCounter = AtomicInteger(0)
   private val mainHandler = Handler(Looper.getMainLooper())
   private var pendingPromise: Promise? = null
   private var pendingResult: WritableMap? = null
@@ -379,7 +381,7 @@ class ZebraDataWedgeModule(
     val intent = Intent(ACTION_DATAWEDGE_FROM_API).apply {
       setPackage(DW_PACKAGE)
       putExtra(apiExtra, bundle)
-      putExtra("SEND_RESULT", "LAST_RESULT")
+      requestResult()
     }
     reactContext.sendBroadcast(intent)
   }
@@ -390,9 +392,17 @@ class ZebraDataWedgeModule(
       // Queries like GET_DATAWEDGE_STATUS take an empty string extra — null
       // causes DataWedge to ignore the request.
       putExtra(apiExtra, extraString ?: "")
-      putExtra("SEND_RESULT", "LAST_RESULT")
+      requestResult()
     }
     reactContext.sendBroadcast(intent)
+  }
+
+  // Never request a result without a COMMAND_IDENTIFIER. DataWedge 11.x hosts
+  // an RFID receiver on RESULT_ACTION that calls equals() on the identifier,
+  // so a SCANNER_INPUT_PLUGIN result without one crashes DataWedge itself.
+  private fun Intent.requestResult() {
+    putExtra("SEND_RESULT", "LAST_RESULT")
+    putExtra("COMMAND_IDENTIFIER", "$COMMAND_ID_PREFIX${commandCounter.incrementAndGet()}")
   }
 
   private fun resString(name: String, fallback: String): String {
@@ -415,6 +425,7 @@ class ZebraDataWedgeModule(
     private const val DW_PACKAGE = "com.symbol.datawedge"
     private const val ACTION_RESULT = "com.symbol.datawedge.api.RESULT_ACTION"
     private const val ACTION_DATAWEDGE_FROM_API = "com.symbol.datawedge.api.ACTION"
+    private const val COMMAND_ID_PREFIX = "zebra-datawedge-"
     private const val QUERY_TIMEOUT_MS = 2000L
     private const val QUERY_ATTEMPTS = 2
   }
